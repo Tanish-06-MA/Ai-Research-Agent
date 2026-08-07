@@ -1,40 +1,45 @@
 from app.llm.prompts import SYSTEM_PROMPT
 import os
-from app.llm.prompts import SYSTEM_PROMPT
 from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
 
-
 client = Groq(api_key=os.environ.get("GROQ_API"))
 
 
-def generate_summary(search_results):
-    """
-    Takes search results from Tavily and returns
-    an AI-generated summary.
-    """
+def generate_summary(query, search_results):
 
-    prompt = "Summarize the following search results:\n\n"
+    prompt = f"""
+User Query:
+{query}
 
-    for result in search_results:
-        prompt += f"""
+Search Results:
+
+"""
+
+    for results in search_results:
+        for result in results:
+            prompt += f"""
 Title: {result["title"]}
 
 Snippet: {result["snippet"]}
 
 Source: {result["url"]}
 
------------------------------------
+---------------------------------
 """
+
     chat_completion = client.chat.completions.create(
         messages=[
             {
                 "role": "system",
                 "content": SYSTEM_PROMPT,
             },
-            {"role": "user", "content": prompt},
+            {
+                "role": "user",
+                "content": prompt,
+            },
         ],
         model="llama-3.3-70b-versatile",
     )

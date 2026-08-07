@@ -15,7 +15,7 @@ def main():
     )
 
     print("\nResearch Plan:\n")
-    print(result["plan"])
+    print(result["draft_summary"])
 
 
 if __name__ == "__main__":

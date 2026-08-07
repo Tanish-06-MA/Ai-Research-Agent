@@ -22,7 +22,3 @@ def web_search(query: str):
         )
 
     return formatted
-
-
-search = web_search("Who is iron Man")
-print(search)
