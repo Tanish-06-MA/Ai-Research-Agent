@@ -42,7 +42,7 @@ Agent:
 - [x] Python fundamentals (functions, classes, decorators, dicts, try/except) — you've completed this
 - [x] Understand LLM API calls (Groq chat completions, system/user roles)
 - [x] Understand tool-calling / function-calling concept (HF Agents Unit 1)
-- [ ] Understand LangGraph basics (nodes, edges, state)
+- [x] Understand LangGraph basics (nodes, edges, state)
 - [x] Get free API keys: Groq (console.groq.com) and Tavily (tavily.com)
 
 ---

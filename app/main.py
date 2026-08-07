@@ -1,15 +1,21 @@
-from app.tools.search import web_search
-from app.llm.groq_client import generate_summary
+from app.graph.graph_builder import app
 
 
 def main():
-    query = input("Enter your Query")
+    query = input("Enter your Query: ")
 
-    search = web_search(query)
+    result = app.invoke(
+        {
+            "query": query,
+            "plan": "",
+            "search_results": [],
+            "sources": [],
+            "draft_summary": "",
+        }
+    )
 
-    summary = generate_summary(search)
-
-    print(summary)
+    print("\nResearch Plan:\n")
+    print(result["plan"])
 
 
 if __name__ == "__main__":
