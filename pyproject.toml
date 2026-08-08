@@ -8,8 +8,11 @@ dependencies = [
     "groq>=1.5.0",
     "langchain-core>=1.5.3",
     "langchain-openai>=1.4.1",
+    "langchain-text-splitters>=1.1.2",
     "langgraph>=1.2.10",
+    "pdfplumber>=0.11.10",
     "requests>=2.34.2",
+    "sentence-transformers>=5.7.0",
     "smolagents>=1.26.0",
     "tavily-python>=0.7.26",
 ]

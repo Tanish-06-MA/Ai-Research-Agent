@@ -23,19 +23,28 @@ def search_node(state: ResearchState):
             continue
 
         if line[0].isdigit():
-            taks = line.split(".", 1)[1].strip()
-            tasks.append(taks)
+            task = line.split(".", 1)[1].strip()
+            tasks.append(task)
 
     all_results = []
     all_sources = []
+    seen_urls = set()
 
     for task in tasks:
         results = web_search(task)
 
-        all_results.append(results)
+        all_results.append(
+            {
+                "task": task,
+                "results": results,
+            }
+        )
 
-        for r in results:
-            all_sources.append(r["url"])
+        for result in results:
+            url = result.get("url")
+            if url and url not in seen_urls:
+                seen_urls.add(url)
+                all_sources.append(url)
 
     state["search_results"] = all_results
     state["sources"] = all_sources
@@ -43,7 +52,6 @@ def search_node(state: ResearchState):
 
 
 def summarize_node(state: ResearchState):
-    summary = generate_summary(state["query"], state["search_results"])
-
+    summary = generate_summary(state["query"], state["plan"], state["search_results"])
     state["draft_summary"] = summary
     return state
