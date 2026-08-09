@@ -1,4 +1,3 @@
-from h11._abnf import chunk_size
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
