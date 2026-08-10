@@ -6,4 +6,5 @@ class ResearchState(TypedDict):
     plan: str
     search_results: list
     sources: list
+    documents: list
     draft_summary: str

@@ -2,6 +2,7 @@ from app.tools.search import web_search
 from app.graph.states import ResearchState
 from app.planner.planner import create_plan
 from app.llm.groq_client import generate_summary
+from app.tools.retriever import retrieve_query
 
 
 def plan_node(state: ResearchState):
@@ -51,7 +52,20 @@ def search_node(state: ResearchState):
     return state
 
 
+def retrieve_node(state: ResearchState):
+    """
+    Retrieves the embeddings
+    """
+    query = state["query"]
+
+    documents = retrieve_query(query, top_k=3)
+
+    return {"documents": documents}
+
+
 def summarize_node(state: ResearchState):
-    summary = generate_summary(state["query"], state["plan"], state["search_results"])
+    summary = generate_summary(
+        state["query"], state["plan"], state["search_results"], state["documents"]
+    )
     state["draft_summary"] = summary
     return state

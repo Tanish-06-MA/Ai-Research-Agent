@@ -1,3 +1,4 @@
+from langchain_core import documents
 from app.graph.graph_builder import app
 
 
@@ -10,6 +11,7 @@ def main():
             "plan": "",
             "search_results": [],
             "sources": [],
+            "documents": [],
             "draft_summary": "",
         }
     )
