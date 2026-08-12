@@ -12,7 +12,7 @@ chunks = chunk_text(text)
 
 embeddings = generate_embeddings(chunks)
 
-store_chunks(chunks, embeddings)
+store_chunks(chunks, embeddings, pdf_path)
 
 print("Chunks stored successfully!")
 print("Total chunks:", len(chunks))

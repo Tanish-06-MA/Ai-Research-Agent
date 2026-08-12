@@ -1,7 +1,7 @@
 from app.tools.retriever import retrieve_query
 
 
-query = "What is LangGraph?"
+query = "How do shortcut connections work in ResNet?"
 
 results = retrieve_query(query)
 
