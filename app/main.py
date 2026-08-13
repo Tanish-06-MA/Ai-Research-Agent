@@ -6,45 +6,54 @@ from app.database.history import init_db, save_research
 
 
 def main():
-    # Initialize database
     init_db()
 
-    query = input("Enter your Query: ")
+    conversation_history = ""
 
-    result = app.invoke(
-        {
-            "query": query,
-            "plan": "",
-            "search_results": [],
-            "sources": [],
-            "documents": [],
-            "draft_summary": "",
-        }
-    )
+    while True:
+        query = input("\nYou: ").strip()
 
-    report = result["draft_summary"]
+        if query.lower() in ["exit", "quit"]:
+            print("Chat ended.")
+            break
 
-    print("\nResearch Report:\n")
-    print(report)
+        result = app.invoke(
+            {
+                "query": query,
+                "plan": "",
+                "search_results": [],
+                "sources": [],
+                "documents": [],
+                "draft_summary": "",
+                "conversation_history": conversation_history,
+                "intent": "",
+                "pdf_relevant": False,
+            }
+        )
 
-    # Generate PDF
-    pdf_path = generate_pdf(report, query)
+        report = result["draft_summary"]
 
-    print(f"\nPDF generated: {pdf_path}")
+        print("\nAssistant:\n")
+        print(report)
 
-    # Current timestamp
-    timestamp = datetime.now().isoformat()
+        # Get updated history from graph
+        conversation_history = result["conversation_history"]
 
-    # Save research history
-    save_research(
-        query=query,
-        timestamp=timestamp,
-        report=report,
-        sources=str(result.get("sources", [])),
-        pdf_path=pdf_path,
-    )
+        # Generate PDF
+        pdf_path = generate_pdf(report, query)
 
-    print("Research saved to history.")
+        print(f"\nPDF generated: {pdf_path}")
+
+        # Save research history
+        timestamp = datetime.now().isoformat()
+
+        save_research(
+            query=query,
+            timestamp=timestamp,
+            report=report,
+            sources=str(result.get("sources", [])),
+            pdf_path=pdf_path,
+        )
 
 
 if __name__ == "__main__":

@@ -162,7 +162,7 @@ Report:
     return _strip_sources_section(response.choices[0].message.content)
 
 
-def generate_summary(query, plan, search_results, documents):
+def generate_summary(query, plan, search_results, documents, conversation_history=""):
     source_map, web_sources, pdf_sources = _build_source_map(search_results, documents)
 
     prompt = f"""
@@ -191,6 +191,9 @@ If the user asks to compare an uploaded PDF with web sources:
 - Only compare information that is actually supported by the PDF and relevant web sources.
 - Do not force information from unrelated web sources into the report.
 - If the PDF does not contain enough information to answer a part of the query, explicitly say so.
+
+Previous Conversation:
+{conversation_history if conversation_history else "No previous conversation."}
 
 User Query:
 {query}

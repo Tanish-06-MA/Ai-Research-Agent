@@ -14,10 +14,9 @@ graph.add_node("summarize", summarize_node)
 
 
 graph.add_edge(START, "plan")
-graph.add_edge("plan", "search")
-graph.add_edge("search", "retrieve")
-graph.add_edge("retrieve", "summarize")
+graph.add_edge("plan", "retrieve")
+graph.add_edge("retrieve", "search")
+graph.add_edge("search", "summarize")
 graph.add_edge("summarize", END)
-
 
 app = graph.compile()
