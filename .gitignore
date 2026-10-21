@@ -9,8 +9,20 @@ wheels/
 # Virtual environments
 .venv
 
+# Environment variables (contains API keys)
 .env
+
+# Generated outputs (recreatable)
+outputs/
+research_history.db
+
+# ChromaDB (recreatable by re-ingesting PDFs)
+chroma_db/
+
+# IDE
+.vscode/
+.idea/
+
+# Project plan (personal notes)
 AI_Research_Browser_Agent_Project_Plan.md
-uv.lock
-.python-version
 updates.md

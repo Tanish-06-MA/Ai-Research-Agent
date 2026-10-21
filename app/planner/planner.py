@@ -6,11 +6,11 @@ from langchain_core.messages import SystemMessage, HumanMessage
 
 load_dotenv(override=True)
 
-api = os.environ.get("GEMINI_API_KEY")
+api = os.environ.get("OPENROUTER_API_KEY")
 
 model = ChatOpenAI(
-    model="gemini-3.5-flash",
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    model="openai/gpt-oss-20b:free",
+    base_url="https://openrouter.ai/api/v1",
     api_key=api,
 )
 

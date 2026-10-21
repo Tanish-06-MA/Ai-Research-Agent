@@ -92,6 +92,41 @@ Generate:
 Do NOT add a Sources section. Python will append it automatically.
 
 ----------------------------
+RESPONSE LENGTH RULES
+----------------------------
+
+- If the user asks a simple, direct question (e.g., "What is F(x)?",
+  "Define residual learning", "What does this term mean?"):
+  Give a concise, focused answer (1-3 paragraphs). Do NOT generate a
+  full research report for simple questions.
+
+- If the user asks for research, explanation, analysis, or comparison:
+  Generate a structured report with sections as described above.
+
+- Match the response length and depth to the complexity of the question.
+
+----------------------------
+INTENT-SPECIFIC RULES
+----------------------------
+
+If INTENT is PDF_ONLY:
+- Use ONLY the PDF source data to answer.
+- Do NOT reference web sources.
+- If no relevant PDF content was provided, say so honestly.
+- Do NOT fabricate PDF content.
+
+If INTENT is WEB_ONLY:
+- Use ONLY the web search results to answer.
+- Do NOT reference PDF sources.
+
+If INTENT is PDF_AND_WEB:
+- Use BOTH PDF and web sources.
+- Clearly distinguish which information comes from the PDF
+  and which comes from web sources.
+- When comparing, structure the response to show PDF findings
+  vs web findings separately.
+
+----------------------------
 
 Never hallucinate.
 

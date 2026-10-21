@@ -10,6 +10,7 @@ client = Groq(api_key=os.environ.get("GROQ_API"))
 
 
 def _build_source_map(search_results, documents):
+    """Build a mapping of source IDs to URLs/paths for citation tracking."""
     source_map = {}
     url_to_id = {}
     web_sources = []
@@ -52,22 +53,27 @@ def _build_source_map(search_results, documents):
 
 
 def _strip_sources_section(report_text):
+    """Remove any Sources section the LLM may have generated."""
     return re.split(r"\n##\s*Sources\b", report_text, flags=re.IGNORECASE, maxsplit=1)[
         0
     ].strip()
 
 
 def _find_citations(report_text):
+    """Find all inline citation IDs like [S1], [P2] in the report."""
     return re.findall(r"\[(S\d+|P\d+)\]", report_text)
 
 
 def _remove_invalid_citations(report_text, invalid_ids):
+    """Remove citations that don't correspond to any provided source."""
     for invalid_id in invalid_ids:
         report_text = report_text.replace(f"[{invalid_id}]", "")
     return report_text
 
 
 def _sort_source_ids(source_ids):
+    """Sort source IDs: web sources (S) first, then PDF sources (P), numerically."""
+
     def key(source_id):
         prefix = 0 if source_id.startswith("S") else 1
         return (prefix, int(source_id[1:]))
@@ -76,6 +82,7 @@ def _sort_source_ids(source_ids):
 
 
 def _format_sources_section(source_ids, source_map):
+    """Format the Sources section to append to the report."""
     lines = ["## Sources"]
     for source_id in _sort_source_ids(source_ids):
         lines.append(f"[{source_id}] {source_map[source_id]}")
@@ -83,6 +90,7 @@ def _format_sources_section(source_ids, source_map):
 
 
 def _is_generic_paragraph(paragraph):
+    """Check if a paragraph is generic filler that doesn't need citations."""
     normalized = paragraph.strip()
     if len(normalized) < 120 and re.match(
         r"^(This report|This document|In this report|Overall|In summary|To begin|To conclude|The following|Additionally|Also|Moreover|Furthermore|Next|Finally|As a result|Therefore)",
@@ -94,6 +102,7 @@ def _is_generic_paragraph(paragraph):
 
 
 def _has_factual_language(paragraph):
+    """Check if a paragraph contains factual claims that should be cited."""
     return bool(
         re.search(
             r"\b(is|are|was|were|has|have|uses|utilizes|provides|describes|explains|states|reports|shows|finds|based on|according to|supports|studies|findings|results|research|paper|model|architecture)\b",
@@ -104,6 +113,7 @@ def _has_factual_language(paragraph):
 
 
 def _count_uncited_factual_paragraphs(report_text):
+    """Count paragraphs with factual claims that lack inline citations."""
     paragraphs = [
         paragraph.strip()
         for paragraph in re.split(r"\n\s*\n", report_text)
@@ -127,6 +137,7 @@ def _count_uncited_factual_paragraphs(report_text):
 
 
 def _repair_report(report_text, web_sources, pdf_sources):
+    """Attempt to add missing citations by asking the LLM to repair the report."""
     source_reference = ""
     if web_sources:
         source_reference += "Web Source Reference Data:\n"
@@ -151,22 +162,67 @@ Report:
 {source_reference}
 """
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": repair_prompt},
-        ],
-    )
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": repair_prompt},
+            ],
+        )
 
-    return _strip_sources_section(response.choices[0].message.content)
+        return _strip_sources_section(response.choices[0].message.content)
+    except Exception as e:
+        print(f"[ERROR] Citation repair failed: {e}")
+        return report_text
 
 
-def generate_summary(query, plan, search_results, documents, conversation_history=""):
+def generate_summary(
+    query, plan, search_results, documents, conversation_history="", intent=""
+):
+    """
+    Generate a research report using Groq LLM.
+
+    Args:
+        query:                User's research query.
+        plan:                 Research plan with numbered tasks.
+        search_results:       Web search results grouped by task.
+        documents:            Retrieved PDF chunks.
+        conversation_history: Running conversation context.
+        intent:               PDF_ONLY | WEB_ONLY | PDF_AND_WEB.
+
+    Returns:
+        Final report string with inline citations and Sources section.
+    """
     source_map, web_sources, pdf_sources = _build_source_map(search_results, documents)
+
+    # Build intent-specific instructions
+    intent_instruction = ""
+    if intent == "PDF_ONLY":
+        intent_instruction = """
+INTENT: PDF_ONLY
+- Answer using ONLY the PDF source data provided below.
+- Do NOT reference or cite any web sources.
+- If no relevant PDF content is available, say so honestly.
+"""
+    elif intent == "WEB_ONLY":
+        intent_instruction = """
+INTENT: WEB_ONLY
+- Answer using ONLY the web search results provided below.
+- Do NOT reference or cite any PDF sources.
+"""
+    elif intent == "PDF_AND_WEB":
+        intent_instruction = """
+INTENT: PDF_AND_WEB
+- Use BOTH PDF sources and web search results.
+- Clearly distinguish which information comes from the PDF vs web sources.
+- When comparing, structure findings to show PDF information separately from web information.
+"""
 
     prompt = f"""
 You are generating a research report.
+
+{intent_instruction}
 
 IMPORTANT CITATION RULES:
 
@@ -185,6 +241,9 @@ If a web source is unrelated to the research topic, IGNORE it.
 Do not create sections such as Pricing, Cost, Benchmarking,
 or other topics unless they are explicitly relevant to the user query.
 
+If the user asks a simple, direct question, give a concise answer.
+Do not generate a full report for simple questions.
+
 If the user asks to compare an uploaded PDF with web sources:
 - Use the PDF as the primary document source.
 - Clearly separate PDF findings from web findings.
@@ -199,27 +258,30 @@ User Query:
 {query}
 
 Research Plan:
-{plan}
+{plan if plan else "No research plan (direct answer from available sources)."}
 
 Search Tasks:
 """
 
-    for task_data in search_results:
-        task = task_data.get("task")
-        results = task_data.get("results", [])
+    if search_results:
+        for task_data in search_results:
+            task = task_data.get("task")
+            results = task_data.get("results", [])
 
-        prompt += f"\nResearch Task: {task}\n"
-        if not results:
-            prompt += "- No search results found for this task.\n"
-            continue
+            prompt += f"\nResearch Task: {task}\n"
+            if not results:
+                prompt += "- No search results found for this task.\n"
+                continue
 
-        for result in results:
-            url = result.get("url", "No URL")
-            source_id = next(
-                (source["id"] for source in web_sources if source["url"] == url),
-                "Unknown",
-            )
-            prompt += f"- [{source_id}] {result.get('title', 'Untitled')} ({url})\n"
+            for result in results:
+                url = result.get("url", "No URL")
+                source_id = next(
+                    (source["id"] for source in web_sources if source["url"] == url),
+                    "Unknown",
+                )
+                prompt += f"- [{source_id}] {result.get('title', 'Untitled')} ({url})\n"
+    else:
+        prompt += "No web search was performed.\n"
 
     prompt += "\nSOURCE REFERENCE DATA:\n"
     if web_sources:
@@ -236,16 +298,27 @@ Search Tasks:
     else:
         prompt += "\nNo PDF sources available.\n"
 
-    chat_completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-    )
+    try:
+        chat_completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+        )
+    except Exception as e:
+        error_msg = str(e).lower()
+
+        if "429" in str(e) or "quota" in error_msg or "rate" in error_msg:
+            return "[ERROR] Groq API rate limit exceeded. Please retry after a moment."
+        elif "401" in str(e) or "403" in str(e) or "auth" in error_msg:
+            return "[ERROR] Groq API authentication failed. Check your GROQ_API key."
+        else:
+            return f"[ERROR] Report generation failed: {e}"
 
     report = _strip_sources_section(chat_completion.choices[0].message.content)
 
+    # --- Citation validation ---
     citations = _find_citations(report)
     valid_citations = [citation for citation in citations if citation in source_map]
     invalid_citations = [
@@ -276,10 +349,10 @@ Search Tasks:
 
     uncited = _count_uncited_factual_paragraphs(report)
     print("Citation validation:")
-    print(f"Total citations: {len(citations)}")
-    print(f"Valid citations: {len(valid_citations)}")
-    print(f"Invalid citations: {len(invalid_citations)}")
-    print(f"Uncited factual paragraphs: {uncited}")
+    print(f"  Total citations: {len(citations)}")
+    print(f"  Valid citations: {len(valid_citations)}")
+    print(f"  Invalid citations: {len(invalid_citations)}")
+    print(f"  Uncited factual paragraphs: {uncited}")
 
     final_report = report.strip()
     if valid_citations:

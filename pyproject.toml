@@ -1,7 +1,7 @@
 [project]
 name = "ai-research-agent"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.0.0"
+description = "AI Research Agent with RAG, PDF semantic retrieval, web search, intelligent source routing, and LangGraph workflow"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -12,9 +12,8 @@ dependencies = [
     "langchain-text-splitters>=1.1.2",
     "langgraph>=1.2.10",
     "pdfplumber>=0.11.10",
+    "python-dotenv>=1.1.0",
     "reportlab>=5.0.0",
-    "requests>=2.34.2",
     "sentence-transformers>=5.7.0",
-    "smolagents>=1.26.0",
     "tavily-python>=0.7.26",
 ]
